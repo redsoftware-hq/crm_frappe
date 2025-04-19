@@ -14,25 +14,25 @@ const routes = [
     component: () => import('@/pages/MobileNotification.vue'),
   },
   {
-    alias: '/leads',
-    path: '/leads/view/:viewType?',
-    name: 'Leads',
+    alias: '/patients',
+    path: '/patients/view/:viewType?',
+    name: 'Patients',
     component: () => import('@/pages/Leads.vue'),
   },
   {
-    path: '/leads/:leadId',
+    path: '/patients/:leadId',
     name: 'Lead',
     component: () => import(`@/pages/${handleMobileView('Lead')}.vue`),
     props: true,
   },
   {
-    alias: '/deals',
-    path: '/deals/view/:viewType?',
-    name: 'Deals',
+    alias: '/bookings',
+    path: '/bookings/view/:viewType?',
+    name: 'Bookings',
     component: () => import('@/pages/Deals.vue'),
   },
   {
-    path: '/deals/:dealId',
+    path: '/bookings/:dealId',
     name: 'Deal',
     component: () => import(`@/pages/${handleMobileView('Deal')}.vue`),
     props: true,
@@ -97,6 +97,18 @@ const routes = [
     component: () => import('@/pages/Welcome.vue'),
   },
   {
+    path: '/reports/view/:viewType?',
+    name: 'Reports',
+    component: () => import('@/pages/Reports.vue'),
+  },
+  // {
+  //   path: '/reports/:reportName',
+  //   name: 'Report',
+  //   component: () => import(`@/pages/${handleMobileView('Report')}.vue`),
+  //   props: true,
+  // },
+  
+  {
     path: '/:invalidpath',
     name: 'Invalid Page',
     component: () => import('@/pages/InvalidPage.vue'),
@@ -123,12 +135,12 @@ router.beforeEach(async (to, from, next) => {
 
     let defaultView = getDefaultView()
     if (!defaultView) {
-      next({ name: 'Leads' })
+      next({ name: 'Patients' })
       return
     }
 
     let { route_name, type, name, is_standard } = defaultView
-    route_name = route_name || 'Leads'
+    route_name = route_name || 'Patients'
 
     if (name && !is_standard) {
       next({ name: route_name, params: { viewType: type }, query: { view: name } })

@@ -164,6 +164,7 @@ import SidebarLink from '@/components/SidebarLink.vue'
 import Notifications from '@/components/Notifications.vue'
 import Settings from '@/components/Settings/Settings.vue'
 import { viewsStore } from '@/stores/views'
+import DashboardIcon from '@/components/Icons/DashboardIcon.vue'
 import {
   unreadNotificationsCount,
   notificationsStore,
@@ -195,14 +196,14 @@ const isDemoSite = ref(window.is_demo_site)
 
 const links = [
   {
-    label: 'Leads',
+    label: 'Patients',
     icon: LeadsIcon,
-    to: 'Leads',
+    to: 'Patients',
   },
   {
-    label: 'Deals',
+    label: 'Bookings',
     icon: DealsIcon,
-    to: 'Deals',
+    to: 'Bookings',
   },
   {
     label: 'Contacts',
@@ -233,6 +234,11 @@ const links = [
     label: 'Email Templates',
     icon: Email2Icon,
     to: 'Email Templates',
+  },
+  {
+    label: 'Reports',
+    icon: DashboardIcon,         
+    to: 'Reports',
   },
 ]
 
@@ -281,9 +287,9 @@ function getIcon(routeName, icon) {
   if (icon) return h('div', { class: 'size-auto' }, icon)
 
   switch (routeName) {
-    case 'Leads':
+    case 'Patients':
       return LeadsIcon
-    case 'Deals':
+    case 'Bookings':
       return DealsIcon
     case 'Contacts':
       return ContactsIcon
@@ -292,7 +298,9 @@ function getIcon(routeName, icon) {
     case 'Notes':
       return NoteIcon
     case 'Call Logs':
-      return PhoneIcon
+      return 
+    case 'Dashboard':
+      return DashboardIcon
     default:
       return PinIcon
   }
@@ -324,7 +332,7 @@ const steps = reactive([
     completed: false,
     onClick: () => {
       minimize.value = true
-      router.push({ name: 'Leads' })
+      router.push({ name: 'Patients' })
     },
   },
   {
@@ -358,7 +366,7 @@ const steps = reactive([
           if (lead) {
             router.push({ name: 'Lead', params: { leadId: lead } })
           } else {
-            router.push({ name: 'Leads' })
+            router.push({ name: 'Patients' })
           }
         },
       }
@@ -421,7 +429,7 @@ const steps = reactive([
           hash: '#comments',
         })
       } else {
-        router.push({ name: 'Leads' })
+        router.push({ name: 'Patients' })
       }
     },
   },
@@ -441,7 +449,7 @@ const steps = reactive([
           hash: '#emails',
         })
       } else {
-        router.push({ name: 'Leads' })
+        router.push({ name: 'Patients' })
       }
     },
   },
@@ -469,7 +477,7 @@ const steps = reactive([
               hash: '#activity',
             })
           } else {
-            router.push({ name: 'Leads' })
+            router.push({ name: 'Patients' })
           }
         },
       }

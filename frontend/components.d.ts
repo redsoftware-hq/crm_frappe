@@ -188,6 +188,8 @@ declare module 'vue' {
     ReloadIcon: typeof import('./src/components/Icons/ReloadIcon.vue')['default']
     ReplyAllIcon: typeof import('./src/components/Icons/ReplyAllIcon.vue')['default']
     ReplyIcon: typeof import('./src/components/Icons/ReplyIcon.vue')['default']
+    ReportDetailModal: typeof import('./src/components/Modals/ReportDetailModal.vue')['default']
+    ReportsListView: typeof import('./src/components/ListViews/ReportsListView.vue')['default']
     Resizer: typeof import('./src/components/Resizer.vue')['default']
     RightSideLayoutIcon: typeof import('./src/components/Icons/RightSideLayoutIcon.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

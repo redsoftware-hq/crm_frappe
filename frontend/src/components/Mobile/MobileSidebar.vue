@@ -108,19 +108,20 @@ import { createResource } from 'frappe-ui'
 import { TrialBanner } from 'frappe-ui/frappe'
 import { computed, h, provide } from 'vue'
 import { mobileSidebarOpened as sidebarOpened } from '@/composables/settings'
+import DashboardIcon from '@/components/Icons/DashboardIcon.vue'
 
 const { getPinnedViews, getPublicViews } = viewsStore()
 
 const links = [
   {
-    label: 'Leads',
+    label: 'Patients',
     icon: LeadsIcon,
-    to: 'Leads',
+    to: 'Patients',
   },
   {
-    label: 'Deals',
+    label: 'Bookings',
     icon: DealsIcon,
-    to: 'Deals',
+    to: 'Bookings',
   },
   {
     label: 'Contacts',
@@ -151,6 +152,11 @@ const links = [
     label: 'Email Templates',
     icon: Email2Icon,
     to: 'Email Templates',
+  },
+  {
+    label: 'Reports',
+    icon: DashboardIcon,
+    to: 'Reports',
   },
 ]
 
@@ -199,9 +205,9 @@ function getIcon(routeName, icon) {
   if (icon) return h('div', { class: 'size-auto' }, icon)
 
   switch (routeName) {
-    case 'Leads':
+    case 'Patients':
       return LeadsIcon
-    case 'Deals':
+    case 'Patients':
       return DealsIcon
     case 'Contacts':
       return ContactsIcon
@@ -211,6 +217,8 @@ function getIcon(routeName, icon) {
       return NoteIcon
     case 'Call Logs':
       return PhoneIcon
+    case 'Dashboard':
+      return DashboardIcon
     default:
       return PinIcon
   }
