@@ -5,13 +5,15 @@
     :rows="rows"
     :options="{
       getRowRoute: (row) => ({
-        name: 'Contact',
-        params: { contactId: row.name },
+        name: 'Report',
+        params: { reportName: row.name },
         query: { view: route.query.view, viewType: route.params.viewType },
       }),
       selectable: options.selectable,
       showTooltip: options.showTooltip,
       resizeColumn: options.resizeColumn,
+      rowCount: options.rowCount,
+      totalCount: options.totalCount,
     }"
     row-key="name"
   >
@@ -26,7 +28,7 @@
         @columnWidthUpdated="emit('columnWidthUpdated', column)"
       >
         <Button
-          v-if="column.key == '_liked_by'"
+          v-if="column.key === '_liked_by'"
           variant="ghosted"
           class="!h-4"
           :class="isLikeFilterApplied ? 'fill-red-500' : 'fill-white'"
@@ -36,50 +38,26 @@
         </Button>
       </ListHeaderItem>
     </ListHeader>
+
     <ListRows
       class="mx-3 sm:mx-5"
       :rows="rows"
-      v-slot="{ idx, column, item }"
-      doctype="Contact"
+      v-slot="{ idx, column, item, row }"
+      doctype="Report"
     >
       <ListRowItem :item="item" :align="column.align">
-        <template #prefix>
-          <div v-if="column.key === 'full_name'">
-            <Avatar
-              v-if="item.label"
-              class="flex items-center"
-              :image="item.image"
-              :label="item.image_label"
-              size="sm"
-            />
-          </div>
-          <div v-else-if="column.key === 'company_name'">
-            <Avatar
-              v-if="item.label"
-              class="flex items-center"
-              :image="item.logo"
-              :label="item.label"
-              size="sm"
-            />
-          </div>
-          <div v-else-if="column.key === 'mobile_no'">
-            <PhoneIcon class="h-4 w-4" />
-          </div>
-        </template>
         <template #default="{ label }">
           <div
             v-if="['modified', 'creation'].includes(column.key)"
             class="truncate text-base"
-            @click="
-              (event) =>
-                emit('applyFilter', {
-                  event,
-                  idx,
-                  column,
-                  item,
-                  firstColumn: columns[0],
-                })
-            "
+            @click="(event) =>
+              emit('applyFilter', {
+                event,
+                idx,
+                column,
+                item,
+                firstColumn: columns[0],
+              })"
           >
             <Tooltip :text="item.label">
               <div>{{ item.timeAgo }}</div>
@@ -95,11 +73,11 @@
           </div>
           <div v-else-if="column.key === '_liked_by'">
             <Button
-              v-if="column.key == '_liked_by'"
               variant="ghosted"
               :class="isLiked(item) ? 'fill-red-500' : 'fill-white'"
               @click.stop.prevent="
-                () => emit('likeDoc', { name: row.name, liked: isLiked(item) })
+                () =>
+                  emit('likeDoc', { name: row.name, liked: isLiked(item) })
               "
             >
               <HeartIcon class="h-4 w-4" />
@@ -108,22 +86,21 @@
           <div
             v-else
             class="truncate text-base"
-            @click="
-              (event) =>
-                emit('applyFilter', {
-                  event,
-                  idx,
-                  column,
-                  item,
-                  firstColumn: columns[0],
-                })
-            "
+            @click="(event) =>
+              emit('applyFilter', {
+                event,
+                idx,
+                column,
+                item,
+                firstColumn: columns[0],
+              })"
           >
             {{ label }}
           </div>
         </template>
       </ListRowItem>
     </ListRows>
+
     <ListSelectBanner>
       <template #actions="{ selections, unselectAll }">
         <Dropdown
@@ -134,6 +111,7 @@
       </template>
     </ListSelectBanner>
   </ListView>
+
   <ListFooter
     v-if="pageLengthCount"
     class="border-t px-3 py-2 sm:px-5"
@@ -144,22 +122,20 @@
     }"
     @loadMore="emit('loadMore')"
   />
+
   <ListBulkActions
     ref="listBulkActionsRef"
     v-model="list"
-    doctype="Contact"
-    :options="{
-      hideAssign: true,
-    }"
+    doctype="Report"
+    :options="{ hideAssign: true }"
   />
 </template>
+
 <script setup>
 import HeartIcon from '@/components/Icons/HeartIcon.vue'
-import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
 import ListRows from '@/components/ListViews/ListRows.vue'
 import {
-  Avatar,
   ListView,
   ListHeader,
   ListHeaderItem,
@@ -168,28 +144,24 @@ import {
   ListFooter,
   Tooltip,
   Dropdown,
+  FormControl,
+  Button,
 } from 'frappe-ui'
 import { sessionStore } from '@/stores/session'
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const props = defineProps({
-  rows: {
-    type: Array,
-    required: true,
-  },
-  columns: {
-    type: Array,
-    required: true,
-  },
+  rows: { type: Array, required: true },
+  columns: { type: Array, required: true },
   options: {
     type: Object,
     default: () => ({
       selectable: true,
       showTooltip: true,
       resizeColumn: false,
-      totalCount: 0,
       rowCount: 0,
+      totalCount: 0,
     }),
   },
 })
@@ -207,12 +179,13 @@ const route = useRoute()
 
 const pageLengthCount = defineModel()
 const list = defineModel('list')
-
-const isLikeFilterApplied = computed(() => {
-  return list.value.params?.filters?._liked_by ? true : false
-})
+const listBulkActionsRef = ref(null)
 
 const { user } = sessionStore()
+
+const isLikeFilterApplied = computed(() => {
+  return list.value?.params?.filters?._liked_by ? true : false
+})
 
 function isLiked(item) {
   if (item) {
@@ -225,8 +198,6 @@ watch(pageLengthCount, (val, old_value) => {
   if (val === old_value) return
   emit('updatePageCount', val)
 })
-
-const listBulkActionsRef = ref(null)
 
 defineExpose({
   customListActions: computed(

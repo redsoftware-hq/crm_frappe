@@ -101,12 +101,12 @@ const routes = [
     name: 'Reports',
     component: () => import('@/pages/Reports.vue'),
   },
-  // {
-  //   path: '/reports/:reportName',
-  //   name: 'Report',
-  //   component: () => import(`@/pages/${handleMobileView('Report')}.vue`),
-  //   props: true,
-  // },
+  {
+    path: '/reports/:reportName',
+    name: 'Report',
+    component: () => import(`@/pages/${handleMobileView('Report')}.vue`),
+    props: true,
+  },
   
   {
     path: '/:invalidpath',

@@ -1,42 +1,44 @@
 <template>
   <LayoutHeader>
     <template #left-header>
-      <ViewBreadcrumbs v-model="viewControls" routeName="Contacts" />
+      <ViewBreadcrumbs v-model="viewControls" routeName="Reports" />
     </template>
     <template #right-header>
       <CustomActions
-        v-if="contactsListView?.customListActions"
-        :actions="contactsListView.customListActions"
+        v-if="reportsListView?.customListActions"
+        :actions="reportsListView.customListActions"
       />
-      <Button
+      <!-- <Button
         variant="solid"
         :label="__('Create')"
-        @click="showContactModal = true"
+        @click="showReportModal = true"
       >
         <template #prefix><FeatherIcon name="plus" class="h-4" /></template>
-      </Button>
+      </Button> -->
     </template>
   </LayoutHeader>
+  
   <ViewControls
     ref="viewControls"
-    v-model="contacts"
+    v-model="reports"
     v-model:loadMore="loadMore"
     v-model:resizeColumn="triggerResize"
     v-model:updatedPageCount="updatedPageCount"
-    doctype="Contact"
+    doctype="Report"
   />
-  <ContactsListView
-    ref="contactsListView"
-    v-if="contacts.data && rows.length"
-    v-model="contacts.data.page_length_count"
-    v-model:list="contacts"
+
+  <ReportsListView
+    ref="reportsListView"
+    v-if="reports.data && rows.length"
+    v-model="reports.data.page_length_count"
+    v-model:list="reports"
     :rows="rows"
-    :columns="contacts.data.columns"
+    :columns="reports.data.columns"
     :options="{
       showTooltip: false,
       resizeColumn: true,
-      rowCount: contacts.data.row_count,
-      totalCount: contacts.data.total_count,
+      rowCount: reports.data.row_count,
+      totalCount: reports.data.total_count,
     }"
     @loadMore="() => loadMore++"
     @columnWidthUpdated="() => triggerResize++"
@@ -45,80 +47,64 @@
     @applyLikeFilter="(data) => viewControls.applyLikeFilter(data)"
     @likeDoc="(data) => viewControls.likeDoc(data)"
   />
+
   <div
-    v-else-if="contacts.data"
+    v-else-if="reports.data"
     class="flex h-full items-center justify-center"
   >
     <div
       class="flex flex-col items-center gap-3 text-xl font-medium text-ink-gray-4"
     >
-      <ContactsIcon class="h-10 w-10" />
-      <span>{{ __('No {0} Found', [__('Contacts')]) }}</span>
-      <Button :label="__('Create')" @click="showContactModal = true">
+      <ReportsIcon class="h-10 w-10" />
+      <span>{{ __('No {0} Found', [__('Reports')]) }}</span>
+      <Button :label="__('Create')" @click="showReportModal = true">
         <template #prefix><FeatherIcon name="plus" class="h-4" /></template>
       </Button>
     </div>
   </div>
-  <ContactModal
-    v-model="showContactModal"
-    v-model:showQuickEntryModal="showQuickEntryModal"
-    :contact="{}"
-    @openAddressModal="(_address) => openAddressModal(_address)"
-  />
-  <QuickEntryModal
-    v-if="showQuickEntryModal"
-    v-model="showQuickEntryModal"
-    doctype="Contact"
-  />
-  <AddressModal v-model="showAddressModal" v-model:address="address" />
+
+  <ReportModal v-model="showReportModal" v-model:report="report" />
 </template>
 
 <script setup>
 import ViewBreadcrumbs from '@/components/ViewBreadcrumbs.vue'
 import CustomActions from '@/components/CustomActions.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
+import ReportsIcon from '@/components/Icons/DashboardIcon.vue'
 import LayoutHeader from '@/components/LayoutHeader.vue'
-import ContactModal from '@/components/Modals/ContactModal.vue'
-import QuickEntryModal from '@/components/Modals/QuickEntryModal.vue'
-import AddressModal from '@/components/Modals/AddressModal.vue'
-import ContactsListView from '@/components/ListViews/ContactsListView.vue'
+import ReportModal from '@/components/Modals/ReportDetailModal.vue'
+import ReportsListView from '../components/ListViews/ReportsListView.vue'
 import ViewControls from '@/components/ViewControls.vue'
 import { getMeta } from '@/stores/meta'
-import { organizationsStore } from '@/stores/organizations.js'
+import { reportsStore } from '@/stores/reports.js'
 import { formatDate, timeAgo } from '@/utils'
-import { call } from 'frappe-ui'
 import { ref, computed } from 'vue'
 
 const { getFormattedPercent, getFormattedFloat, getFormattedCurrency } =
-  getMeta('Contact')
-const { getOrganization } = organizationsStore()
+  getMeta('Report')
 
-const showContactModal = ref(false)
-const showQuickEntryModal = ref(false)
-const showAddressModal = ref(false)
+const showReportModal = ref(false)
+const report = ref({})
 
-const contactsListView = ref(null)
-
-// contacts data is loaded in the ViewControls component
-const contacts = ref({})
-const address = ref({})
+// reports data is loaded in the ViewControls component
+const reports = ref({})
 const loadMore = ref(1)
 const triggerResize = ref(1)
 const updatedPageCount = ref(20)
 const viewControls = ref(null)
+const reportsListView= ref(null)  
 
 const rows = computed(() => {
   if (
-    !contacts.value?.data?.data ||
-    !['list', 'group_by'].includes(contacts.value.data.view_type)
+    !reports.value?.data?.data ||
+    !['list', 'group_by'].includes(reports.value.data.view_type)
   )
     return []
-  return contacts.value?.data.data.map((contact) => {
+  return reports.value?.data.data.map((reportData) => {
     let _rows = {}
-    contacts.value?.data.rows.forEach((row) => {
-      _rows[row] = contact[row]
+    reports.value?.data.rows.forEach((row) => {
+      _rows[row] = reportData[row]
 
-      let fieldType = contacts.value?.data.columns?.find(
+      let fieldType = reports.value?.data.columns?.find(
         (col) => (col.key || col.value) == row,
       )?.type
 
@@ -127,51 +113,29 @@ const rows = computed(() => {
         ['Date', 'Datetime'].includes(fieldType) &&
         !['modified', 'creation'].includes(row)
       ) {
-        _rows[row] = formatDate(contact[row], '', true, fieldType == 'Datetime')
+        _rows[row] = formatDate(reportData[row], '', true, fieldType == 'Datetime')
       }
 
       if (fieldType && fieldType == 'Currency') {
-        _rows[row] = getFormattedCurrency(row, contact)
+        _rows[row] = getFormattedCurrency(row, reportData)
       }
 
       if (fieldType && fieldType == 'Float') {
-        _rows[row] = getFormattedFloat(row, contact)
+        _rows[row] = getFormattedFloat(row, reportData)
       }
 
       if (fieldType && fieldType == 'Percent') {
-        _rows[row] = getFormattedPercent(row, contact)
+        _rows[row] = getFormattedPercent(row, reportData)
       }
 
-      if (row == 'full_name') {
+      if (row == 'modified' || row == 'creation') {
         _rows[row] = {
-          label: contact.full_name,
-          image_label: contact.full_name,
-          image: contact.image,
-        }
-      } else if (row == 'company_name') {
-        _rows[row] = {
-          label: contact.company_name,
-          logo: getOrganization(contact.company_name)?.organization_logo,
-        }
-      } else if (['modified', 'creation'].includes(row)) {
-        _rows[row] = {
-          label: formatDate(contact[row]),
-          timeAgo: __(timeAgo(contact[row])),
+          label: formatDate(reportData[row]),
+          timeAgo: __(timeAgo(reportData[row])),
         }
       }
     })
     return _rows
   })
 })
-
-async function openAddressModal(_address) {
-  if (_address) {
-    _address = await call('frappe.client.get', {
-      doctype: 'Address',
-      name: _address,
-    })
-  }
-  showAddressModal.value = true
-  address.value = _address || {}
-}
 </script>
