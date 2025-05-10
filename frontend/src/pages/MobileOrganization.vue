@@ -122,7 +122,7 @@
         </div>
         <DealsListView
           class="mt-4"
-          v-if="tab.label === 'Deals' && rows.length"
+          v-if="tab.label === 'Bookings' && rows.length"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
@@ -363,8 +363,8 @@ const tabs = [
     icon: DetailsIcon,
   },
   {
-    name: 'Deals',
-    label: __('Deals'),
+    name: 'Bookings',
+    label: __('Bookings'),
     icon: h(DealsIcon, { class: 'h-4 w-4' }),
     count: computed(() => deals.data?.length),
   },

@@ -37,7 +37,7 @@
           class="flex-1"
           size="md"
           type="text"
-          :placeholder="__('My Open Deals')"
+          :placeholder="__('My Open Bookings')"
           v-model="view.label"
         />
       </div>

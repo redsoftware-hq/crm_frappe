@@ -136,7 +136,7 @@
       <template #tab-panel="{ tab }">
         <DealsListView
           class="mt-4"
-          v-if="tab.label === 'Deals' && rows.length"
+          v-if="tab.label === 'Bookings' && rows.length"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
@@ -400,7 +400,7 @@ function getParsedSections(_sections) {
 const tabIndex = ref(0)
 const tabs = [
   {
-    label: 'Deals',
+    label: 'Bookings',
     icon: h(DealsIcon, { class: 'h-4 w-4' }),
     count: computed(() => deals.data?.length),
   },

@@ -4,9 +4,9 @@
   >
     <div class="space-y-2">
       <div>Invalid page or not permitted to access</div>
-      <Button :route="{ name: 'Leads' }">
+      <Button :route="{ name: 'Patients' }">
         <template #prefix><LeadsIcon class="w-4" /></template>
-        Leads
+        Patients
       </Button>
     </div>
   </div>

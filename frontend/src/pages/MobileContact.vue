@@ -106,7 +106,7 @@
     <Tabs as="div" v-model="tabIndex" :tabs="tabs" class="overflow-auto">
       <TabList class="!px-4" v-slot="{ tab, selected }">
         <button
-          v-if="tab.name == 'Deals'"
+          v-if="tab.name == 'Bookings'"
           class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:border-outline-gray-3 hover:text-ink-gray-9"
           :class="{ 'text-ink-gray-9': selected }"
         >
@@ -139,14 +139,14 @@
           </div>
         </div>
         <DealsListView
-          v-else-if="tab.label === 'Deals' && rows.length"
+          v-else-if="tab.label === 'Bookings' && rows.length"
           class="mt-4"
           :rows="rows"
           :columns="columns"
           :options="{ selectable: false, showTooltip: false }"
         />
         <div
-          v-if="tab.label === 'Deals' && !rows.length"
+          v-if="tab.label === 'Bookings' && !rows.length"
           class="grid flex-1 place-items-center text-xl font-medium text-ink-gray-4"
         >
           <div class="flex flex-col items-center justify-center space-y-3">
@@ -316,8 +316,8 @@ const tabs = [
     icon: DetailsIcon,
   },
   {
-    name: 'Deals',
-    label: __('Deals'),
+    name: 'Bookings',
+    label: __('Bookings'),
     icon: h(DealsIcon, { class: 'h-4 w-4' }),
     count: computed(() => deals.data?.length),
   },

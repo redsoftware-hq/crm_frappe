@@ -295,7 +295,7 @@ function validateRequired(fieldname, value) {
 }
 
 const breadcrumbs = computed(() => {
-  let items = [{ label: __('Leads'), route: { name: 'Leads' } }]
+  let items = [{ label: __('Patients'), route: { name: 'Patients' } }]
 
   if (route.query.view || route.query.viewType) {
     let view = getView(route.query.view, route.query.viewType, 'CRM Lead')
@@ -304,7 +304,7 @@ const breadcrumbs = computed(() => {
         label: __(view.label),
         icon: view.icon,
         route: {
-          name: 'Leads',
+          name: 'Patients',
           params: { viewType: route.query.viewType },
           query: { view: route.query.view },
         },
@@ -421,7 +421,7 @@ async function deleteLead(name) {
     doctype: 'CRM Lead',
     name,
   })
-  router.push({ name: 'Leads' })
+  router.push({ name: 'Patients' })
 }
 
 // Convert to Deal

@@ -1,5 +1,5 @@
 <template>
-  <LayoutHeader v-if="lead.data">
+  <LayoutHeader v-if="contact.data">
     <template #left-header>
       <Breadcrumbs :items="breadcrumbs">
         <template #prefix="{ item }">
@@ -7,494 +7,267 @@
         </template>
       </Breadcrumbs>
     </template>
-    <template #right-header>
-      <CustomActions
-        v-if="lead.data._customActions?.length"
-        :actions="lead.data._customActions"
-      />
-      <AssignTo
-        v-model="lead.data._assignedTo"
-        :data="lead.data"
-        doctype="CRM Lead"
-      />
-      <Dropdown
-        :options="statusOptions('lead', updateField, lead.data._customStatuses)"
-      >
-        <template #default="{ open }">
-          <Button :label="lead.data.status">
-            <template #prefix>
-              <IndicatorIcon :class="getLeadStatus(lead.data.status).color" />
-            </template>
-            <template #suffix>
-              <FeatherIcon
-                :name="open ? 'chevron-up' : 'chevron-down'"
-                class="h-4"
-              />
-            </template>
-          </Button>
-        </template>
-      </Dropdown>
-      <Button
-        :label="__('Convert to Deal')"
-        variant="solid"
-        @click="showConvertToDealModal = true"
-      />
-    </template>
   </LayoutHeader>
-  <div v-if="lead?.data" class="flex h-full overflow-hidden">
-    <Tabs as="div" v-model="tabIndex" :tabs="tabs">
-      <template #tab-panel>
-        <Activities
-          ref="activities"
-          doctype="CRM Lead"
-          :tabs="tabs"
-          v-model:reload="reload"
-          v-model:tabIndex="tabIndex"
-          v-model="lead"
-        />
-      </template>
-    </Tabs>
-    <Resizer class="flex flex-col justify-between border-l" side="right">
-      <div
-        class="flex h-10.5 cursor-copy items-center border-b px-5 py-2.5 text-lg font-medium text-ink-gray-9"
-        @click="copyToClipboard(lead.data.name)"
-      >
-        {{ __(lead.data.name) }}
-      </div>
-      <FileUploader
-        @success="(file) => updateField('image', file.file_url)"
-        :validateFile="validateFile"
-      >
-        <template #default="{ openFileSelector, error }">
-          <div class="flex items-center justify-start gap-5 border-b p-5">
-            <div class="group relative size-12">
-              <Avatar
-                size="3xl"
-                class="size-12"
-                :label="title"
-                :image="lead.data.image"
-              />
-              <component
-                :is="lead.data.image ? Dropdown : 'div'"
-                v-bind="
-                  lead.data.image
-                    ? {
-                        options: [
-                          {
-                            icon: 'upload',
-                            label: lead.data.image
-                              ? __('Change image')
-                              : __('Upload image'),
-                            onClick: openFileSelector,
-                          },
-                          {
-                            icon: 'trash-2',
-                            label: __('Remove image'),
-                            onClick: () => updateField('image', ''),
-                          },
-                        ],
-                      }
-                    : { onClick: openFileSelector }
-                "
-                class="!absolute bottom-0 left-0 right-0"
-              >
-                <div
-                  class="z-1 absolute bottom-0.5 left-0 right-0.5 flex h-9 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-3 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
-                  style="
-                    -webkit-clip-path: inset(12px 0 0 0);
-                    clip-path: inset(12px 0 0 0);
-                  "
-                >
-                  <CameraIcon class="size-4 cursor-pointer text-white" />
-                </div>
-              </component>
-            </div>
-            <div class="flex flex-col gap-2.5 truncate">
-              <Tooltip :text="lead.data.lead_name || __('Set first name')">
-                <div class="truncate text-2xl font-medium text-ink-gray-9">
-                  {{ title }}
-                </div>
-              </Tooltip>
-              <div class="flex gap-1.5">
-                <Tooltip v-if="callEnabled" :text="__('Make a call')">
-                  <div>
-                    <Button
-                      class="h-7 w-7"
-                      @click="
-                        () =>
-                          lead.data.mobile_no
-                            ? makeCall(lead.data.mobile_no)
-                            : _errorMessage(__('No phone number set'))
+  <div v-if="contact.data" ref="parentRef" class="flex h-full">
+    <Resizer
+      v-if="contact.data"
+      :parent="$refs.parentRef"
+      class="flex h-full flex-col overflow-hidden border-r"
+    >
+      <div class="border-b">
+        <FileUploader
+          @success="changeContactImage"
+          :validateFile="validateFile"
+        >
+          <template #default="{ openFileSelector, error }">
+            <div class="flex flex-col items-start justify-start gap-4 p-5">
+              <div class="flex gap-4 items-center">
+                <div class="group relative h-15.5 w-15.5">
+                  <Avatar
+                    size="3xl"
+                    class="h-15.5 w-15.5"
+                    :label="contact.data.full_name"
+                    :image="contact.data.image"
+                  />
+                  <component
+                    :is="contact.data.image ? Dropdown : 'div'"
+                    v-bind="
+                      contact.data.image
+                        ? {
+                            options: [
+                              {
+                                icon: 'upload',
+                                label: contact.data.image
+                                  ? __('Change image')
+                                  : __('Upload image'),
+                                onClick: openFileSelector,
+                              },
+                              {
+                                icon: 'trash-2',
+                                label: __('Remove image'),
+                                onClick: () => changeContactImage(''),
+                              },
+                            ],
+                          }
+                        : { onClick: openFileSelector }
+                    "
+                    class="!absolute bottom-0 left-0 right-0"
+                  >
+                    <div
+                      class="z-1 absolute bottom-0 left-0 right-0 flex h-14 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-5 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+                      style="
+                        -webkit-clip-path: inset(22px 0 0 0);
+                        clip-path: inset(22px 0 0 0);
                       "
                     >
-                      <PhoneIcon class="h-4 w-4" />
-                    </Button>
+                      <CameraIcon class="h-6 w-6 cursor-pointer text-white" />
+                    </div>
+                  </component>
+                </div>
+                <div class="flex flex-col gap-2 truncate text-ink-gray-9">
+                  <div class="truncate text-2xl font-medium">
+                    <span v-if="contact.data.salutation">
+                      {{ contact.data.salutation + '. ' }}
+                    </span>
+                    <span>{{ contact.data.full_name }}</span>
                   </div>
-                </Tooltip>
-                <Tooltip :text="__('Send an email')">
-                  <div>
-                    <Button class="h-7 w-7">
-                      <Email2Icon
-                        class="h-4 w-4"
-                        @click="
-                          lead.data.email
-                            ? openEmailBox()
-                            : _errorMessage(__('No email set'))
-                        "
-                      />
-                    </Button>
+                  <div
+                    v-if="contact.data.company_name"
+                    class="flex items-center gap-1.5 text-base text-ink-gray-8"
+                  >
+                    <Avatar
+                      size="xs"
+                      :label="contact.data.company_name"
+                      :image="
+                        getOrganization(contact.data.company_name)
+                          ?.organization_logo
+                      "
+                    />
+                    <span class="">{{ contact.data.company_name }}</span>
                   </div>
-                </Tooltip>
-                <Tooltip :text="__('Go to website')">
-                  <div>
-                    <Button class="h-7 w-7">
-                      <LinkIcon
-                        class="h-4 w-4"
-                        @click="
-                          lead.data.website
-                            ? openWebsite(lead.data.website)
-                            : _errorMessage(__('No website set'))
-                        "
-                      />
-                    </Button>
-                  </div>
-                </Tooltip>
-                <Tooltip :text="__('Attach a file')">
-                  <div>
-                    <Button class="h-7 w-7" @click="showFilesUploader = true">
-                      <AttachmentIcon class="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Tooltip>
+                  <ErrorMessage :message="__(error)" />
+                </div>
               </div>
-              <ErrorMessage :message="__(error)" />
+              <div class="flex gap-1.5">
+                <Button
+                  v-if="contact.data.actual_mobile_no"
+                  :label="__('Make Call')"
+                  size="sm"
+                  @click="
+                    callEnabled && makeCall(contact.data.actual_mobile_no)
+                  "
+                >
+                  <template #prefix>
+                    <PhoneIcon class="h-4 w-4" />
+                  </template>
+                </Button>
+                <Button
+                  :label="__('Delete')"
+                  theme="red"
+                  size="sm"
+                  @click="deleteContact"
+                >
+                  <template #prefix>
+                    <FeatherIcon name="trash-2" class="h-4 w-4" />
+                  </template>
+                </Button>
+              </div>
             </div>
-          </div>
-        </template>
-      </FileUploader>
-      <SLASection
-        v-if="lead.data.sla_status"
-        v-model="lead.data"
-        @updateField="updateField"
-      />
+          </template>
+        </FileUploader>
+      </div>
       <div
         v-if="sections.data"
         class="flex flex-1 flex-col justify-between overflow-hidden"
       >
         <SidePanelLayout
-          v-model="lead.data"
+          v-model="contact.data"
           :sections="sections.data"
-          doctype="CRM Lead"
+          doctype="Contact"
           @update="updateField"
           @reload="sections.reload"
         />
       </div>
     </Resizer>
+    <Tabs as="div" v-model="tabIndex" :tabs="tabs">
+      <template #tab-item="{ tab, selected }">
+        <button
+          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:border-outline-gray-3 hover:text-ink-gray-9"
+          :class="{ 'text-ink-gray-9': selected }"
+        >
+          <component v-if="tab.icon" :is="tab.icon" class="h-5" />
+          {{ __(tab.label) }}
+          <Badge
+            class="group-hover:bg-surface-gray-7"
+            :class="[selected ? 'bg-surface-gray-7' : 'bg-gray-600']"
+            variant="solid"
+            theme="gray"
+            size="sm"
+          >
+            {{ tab.count }}
+          </Badge>
+        </button>
+      </template>
+      <template #tab-panel="{ tab }">
+        <DealsListView
+          v-if="tab.label === 'Bookings' && rows.length"
+          class="mt-4"
+          :rows="rows"
+          :columns="columns"
+          :options="{ selectable: false, showTooltip: false }"
+        />
+        <div
+          v-if="!rows.length"
+          class="grid flex-1 place-items-center text-xl font-medium text-ink-gray-4"
+        >
+          <div class="flex flex-col items-center justify-center space-y-3">
+            <component :is="tab.icon" class="!h-10 !w-10" />
+            <div>{{ __('No {0} Found', [__(tab.label)]) }}</div>
+          </div>
+        </div>
+      </template>
+    </Tabs>
   </div>
   <ErrorPage v-else :errorTitle="errorTitle" :errorMessage="errorMessage" />
-  <Dialog
-    v-model="showConvertToDealModal"
-    :options="{
-      size: 'xl',
-      actions: [
-        {
-          label: __('Convert'),
-          variant: 'solid',
-          onClick: convertToDeal,
-        },
-      ],
-    }"
-  >
-    <template #body-header>
-      <div class="mb-6 flex items-center justify-between">
-        <div>
-          <h3 class="text-2xl font-semibold leading-6 text-ink-gray-9">
-            {{ __('Convert to Deal') }}
-          </h3>
-        </div>
-        <div class="flex items-center gap-1">
-          <Button
-            v-if="isManager() && !isMobileView"
-            variant="ghost"
-            class="w-7"
-            @click="openQuickEntryModal"
-          >
-            <EditIcon class="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            class="w-7"
-            @click="showConvertToDealModal = false"
-          >
-            <FeatherIcon name="x" class="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </template>
-    <template #body-content>
-      <div class="mb-4 flex items-center gap-2 text-ink-gray-5">
-        <OrganizationsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Organization') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingOrganizationChecked" />
-        </div>
-        <Link
-          v-if="existingOrganizationChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingOrganization"
-          doctype="CRM Organization"
-          @change="(data) => (existingOrganization = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{
-            __(
-              'New organization will be created based on the data in details section',
-            )
-          }}
-        </div>
-      </div>
-
-      <div class="mb-4 mt-6 flex items-center gap-2 text-ink-gray-5">
-        <ContactsIcon class="h-4 w-4" />
-        <label class="block text-base">{{ __('Contact') }}</label>
-      </div>
-      <div class="ml-6 text-ink-gray-9">
-        <div class="flex items-center justify-between text-base">
-          <div>{{ __('Choose Existing') }}</div>
-          <Switch v-model="existingContactChecked" />
-        </div>
-        <Link
-          v-if="existingContactChecked"
-          class="form-control mt-2.5"
-          size="md"
-          :value="existingContact"
-          doctype="Contact"
-          @change="(data) => (existingContact = data)"
-        />
-        <div v-else class="mt-2.5 text-base">
-          {{ __("New contact will be created based on the person's details") }}
-        </div>
-      </div>
-
-      <div v-if="dealTabs.data?.length" class="h-px w-full border-t my-6" />
-
-      <FieldLayout
-        v-if="dealTabs.data?.length"
-        :tabs="dealTabs.data"
-        :data="deal"
-        doctype="CRM Deal"
-      />
-    </template>
-  </Dialog>
-  <QuickEntryModal
-    v-if="showQuickEntryModal"
-    v-model="showQuickEntryModal"
-    doctype="CRM Deal"
-    :onlyRequired="true"
-  />
-  <FilesUploader
-    v-if="lead.data?.name"
-    v-model="showFilesUploader"
-    doctype="CRM Lead"
-    :docname="lead.data.name"
-    @after="
-      () => {
-        activities?.all_activities?.reload()
-        changeTabTo('attachments')
-      }
-    "
-  />
+  <AddressModal v-model="showAddressModal" v-model:address="_address" />
 </template>
+
 <script setup>
 import ErrorPage from '@/components/ErrorPage.vue'
-import Icon from '@/components/Icon.vue'
 import Resizer from '@/components/Resizer.vue'
-import ActivityIcon from '@/components/Icons/ActivityIcon.vue'
-import EmailIcon from '@/components/Icons/EmailIcon.vue'
-import Email2Icon from '@/components/Icons/Email2Icon.vue'
-import CommentIcon from '@/components/Icons/CommentIcon.vue'
-import DetailsIcon from '@/components/Icons/DetailsIcon.vue'
-import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
-import TaskIcon from '@/components/Icons/TaskIcon.vue'
-import NoteIcon from '@/components/Icons/NoteIcon.vue'
-import WhatsAppIcon from '@/components/Icons/WhatsAppIcon.vue'
-import IndicatorIcon from '@/components/Icons/IndicatorIcon.vue'
-import CameraIcon from '@/components/Icons/CameraIcon.vue'
-import LinkIcon from '@/components/Icons/LinkIcon.vue'
-import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
-import ContactsIcon from '@/components/Icons/ContactsIcon.vue'
-import AttachmentIcon from '@/components/Icons/AttachmentIcon.vue'
-import EditIcon from '@/components/Icons/EditIcon.vue'
-import LayoutHeader from '@/components/LayoutHeader.vue'
-import Activities from '@/components/Activities/Activities.vue'
-import AssignTo from '@/components/AssignTo.vue'
-import FilesUploader from '@/components/FilesUploader/FilesUploader.vue'
-import Link from '@/components/Controls/Link.vue'
+import Icon from '@/components/Icon.vue'
 import SidePanelLayout from '@/components/SidePanelLayout.vue'
-import FieldLayout from '@/components/FieldLayout/FieldLayout.vue'
-import QuickEntryModal from '@/components/Modals/QuickEntryModal.vue'
-import SLASection from '@/components/SLASection.vue'
-import CustomActions from '@/components/CustomActions.vue'
-import {
-  openWebsite,
-  createToast,
-  setupAssignees,
-  setupCustomizations,
-  errorMessage as _errorMessage,
-  copyToClipboard,
-} from '@/utils'
+import LayoutHeader from '@/components/LayoutHeader.vue'
+import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import CameraIcon from '@/components/Icons/CameraIcon.vue'
+import DealsIcon from '@/components/Icons/DealsIcon.vue'
+import DealsListView from '@/components/ListViews/DealsListView.vue'
+import AddressModal from '@/components/Modals/AddressModal.vue'
+import { formatDate, timeAgo, createToast } from '@/utils'
 import { getView } from '@/utils/view'
 import { getSettings } from '@/stores/settings'
-import { usersStore } from '@/stores/users'
-import { globalStore } from '@/stores/global'
-import { statusesStore } from '@/stores/statuses'
 import { getMeta } from '@/stores/meta'
+import { globalStore } from '@/stores/global.js'
+import { usersStore } from '@/stores/users.js'
+import { organizationsStore } from '@/stores/organizations.js'
+import { statusesStore } from '@/stores/statuses'
+import { callEnabled } from '@/composables/settings'
 import {
-  whatsappEnabled,
-  callEnabled,
-  isMobileView,
-} from '@/composables/settings'
-import { capture } from '@/telemetry'
-import {
-  createResource,
-  FileUploader,
-  Dropdown,
-  Tooltip,
-  Avatar,
-  Tabs,
-  Switch,
   Breadcrumbs,
+  Avatar,
+  FileUploader,
+  Tabs,
   call,
+  createResource,
   usePageMeta,
+  Dropdown,
 } from 'frappe-ui'
-import { useOnboarding } from 'frappe-ui/frappe'
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useActiveTabManager } from '@/composables/useActiveTabManager'
+import { ref, computed, h } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { errorMessage as _errorMessage } from '../utils'
 
 const { brand } = getSettings()
-const { isManager } = usersStore()
-const { $dialog, $socket, makeCall } = globalStore()
-const { statusOptions, getLeadStatus, getDealStatus } = statusesStore()
-const { doctypeMeta } = getMeta('CRM Lead')
+const { $dialog, makeCall } = globalStore()
 
-const { updateOnboardingStep } = useOnboarding('frappecrm')
-
-const route = useRoute()
-const router = useRouter()
+const { getUser } = usersStore()
+const { getOrganization } = organizationsStore()
+const { getDealStatus } = statusesStore()
+const { doctypeMeta } = getMeta('Contact')
 
 const props = defineProps({
-  leadId: {
+  contactId: {
     type: String,
     required: true,
   },
 })
 
+const route = useRoute()
+const router = useRouter()
+
+const showAddressModal = ref(false)
+const _contact = ref({})
+const _address = ref({})
+
 const errorTitle = ref('')
 const errorMessage = ref('')
 
-const lead = createResource({
-  url: 'crm.fcrm.doctype.crm_lead.api.get_lead',
-  params: { name: props.leadId },
-  cache: ['lead', props.leadId],
-  onSuccess: (data) => {
+const contact = createResource({
+  url: 'crm.api.contact.get_contact',
+  cache: ['contact', props.contactId],
+  params: { name: props.contactId },
+  auto: true,
+  transform: (data) => {
+    return {
+      ...data,
+      actual_mobile_no: data.mobile_no,
+      mobile_no: data.mobile_no,
+    }
+  },
+  onSuccess: () => {
     errorTitle.value = ''
     errorMessage.value = ''
-    setupAssignees(lead)
-    setupCustomizations(lead, {
-      doc: data,
-      $dialog,
-      $socket,
-      router,
-      updateField,
-      createToast,
-      deleteDoc: deleteLead,
-      resource: { lead, sections },
-      call,
-    })
   },
   onError: (err) => {
     if (err.messages?.[0]) {
       errorTitle.value = __('Not permitted')
       errorMessage.value = __(err.messages?.[0])
     } else {
-      router.push({ name: 'Leads' })
+      router.push({ name: 'Contacts' })
     }
   },
 })
 
-onMounted(() => {
-  if (lead.data) return
-  lead.fetch()
-})
-
-const reload = ref(false)
-const showFilesUploader = ref(false)
-
-function updateLead(fieldname, value, callback) {
-  value = Array.isArray(fieldname) ? '' : value
-
-  if (!Array.isArray(fieldname) && validateRequired(fieldname, value)) return
-
-  createResource({
-    url: 'frappe.client.set_value',
-    params: {
-      doctype: 'CRM Lead',
-      name: props.leadId,
-      fieldname,
-      value,
-    },
-    auto: true,
-    onSuccess: () => {
-      lead.reload()
-      reload.value = true
-      createToast({
-        title: __('Lead updated'),
-        icon: 'check',
-        iconClasses: 'text-ink-green-3',
-      })
-      callback?.()
-    },
-    onError: (err) => {
-      createToast({
-        title: __('Error updating lead'),
-        text: __(err.messages?.[0]),
-        icon: 'x',
-        iconClasses: 'text-ink-red-4',
-      })
-    },
-  })
-}
-
-function validateRequired(fieldname, value) {
-  let meta = lead.data.fields_meta || {}
-  if (meta[fieldname]?.reqd && !value) {
-    createToast({
-      title: __('Error Updating Lead'),
-      text: __('{0} is a required field', [meta[fieldname].label]),
-      icon: 'x',
-      iconClasses: 'text-ink-red-4',
-    })
-    return true
-  }
-  return false
-}
-
 const breadcrumbs = computed(() => {
-  let items = [{ label: __('Leads'), route: { name: 'Leads' } }]
+  let items = [{ label: __('Contacts'), route: { name: 'Contacts' } }]
 
   if (route.query.view || route.query.viewType) {
-    let view = getView(route.query.view, route.query.viewType, 'CRM Lead')
+    let view = getView(route.query.view, route.query.viewType, 'Contact')
     if (view) {
       items.push({
         label: __(view.label),
         icon: view.icon,
         route: {
-          name: 'Leads',
+          name: 'Contacts',
           params: { viewType: route.query.viewType },
           query: { view: route.query.view },
         },
@@ -504,85 +277,20 @@ const breadcrumbs = computed(() => {
 
   items.push({
     label: title.value,
-    route: { name: 'Lead', params: { leadId: lead.data.name } },
+    route: { name: 'Contact', params: { contactId: props.contactId } },
   })
   return items
 })
 
 const title = computed(() => {
-  let t = doctypeMeta['CRM Lead']?.title_field || 'name'
-  return lead.data?.[t] || props.leadId
+  let t = doctypeMeta['Contact']?.title_field || 'name'
+  return contact.data?.[t] || props.contactId
 })
 
 usePageMeta(() => {
   return {
     title: title.value,
     icon: brand.favicon,
-  }
-})
-
-const tabs = computed(() => {
-  let tabOptions = [
-    {
-      name: 'Activity',
-      label: __('Activity'),
-      icon: ActivityIcon,
-    },
-    {
-      name: 'Emails',
-      label: __('Emails'),
-      icon: EmailIcon,
-    },
-    {
-      name: 'Comments',
-      label: __('Comments'),
-      icon: CommentIcon,
-    },
-    {
-      name: 'Data',
-      label: __('Data'),
-      icon: DetailsIcon,
-    },
-    {
-      name: 'Calls',
-      label: __('Calls'),
-      icon: PhoneIcon,
-    },
-    {
-      name: 'Tasks',
-      label: __('Tasks'),
-      icon: TaskIcon,
-    },
-    {
-      name: 'Notes',
-      label: __('Notes'),
-      icon: NoteIcon,
-    },
-    {
-      name: 'Attachments',
-      label: __('Attachments'),
-      icon: AttachmentIcon,
-    },
-    {
-      name: 'WhatsApp',
-      label: __('WhatsApp'),
-      icon: WhatsAppIcon,
-      condition: () => whatsappEnabled.value,
-    },
-  ]
-  return tabOptions.filter((tab) => (tab.condition ? tab.condition() : true))
-})
-
-const { tabIndex, changeTabTo } = useActiveTabManager(tabs, 'lastLeadTab')
-
-watch(tabs, (value) => {
-  if (value && route.params.tabName) {
-    let index = value.findIndex(
-      (tab) => tab.name.toLowerCase() === route.params.tabName.toLowerCase(),
-    )
-    if (index !== -1) {
-      tabIndex.value = index
-    }
   }
 })
 
@@ -593,141 +301,360 @@ function validateFile(file) {
   }
 }
 
+async function changeContactImage(file) {
+  await call('frappe.client.set_value', {
+    doctype: 'Contact',
+    name: props.contactId,
+    fieldname: 'image',
+    value: file?.file_url || '',
+  })
+  contact.reload()
+}
+
+async function deleteContact() {
+  $dialog({
+    title: __('Delete contact'),
+    message: __('Are you sure you want to delete this contact?'),
+    actions: [
+      {
+        label: __('Delete'),
+        theme: 'red',
+        variant: 'solid',
+        async onClick(close) {
+          await call('frappe.client.delete', {
+            doctype: 'Contact',
+            name: props.contactId,
+          })
+          close()
+          router.push({ name: 'Contacts' })
+        },
+      },
+    ],
+  })
+}
+
+const tabIndex = ref(0)
+const tabs = [
+  {
+    label: 'Bookings',
+    icon: h(DealsIcon, { class: 'h-4 w-4' }),
+    count: computed(() => deals.data?.length),
+  },
+]
+
+const deals = createResource({
+  url: 'crm.api.contact.get_linked_deals',
+  cache: ['deals', props.contactId],
+  params: {
+    contact: props.contactId,
+  },
+  auto: true,
+})
+
+const rows = computed(() => {
+  if (!deals.data || deals.data == []) return []
+
+  return deals.data.map((row) => getDealRowObject(row))
+})
+
 const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
-  cache: ['sidePanelSections', 'CRM Lead'],
-  params: { doctype: 'CRM Lead' },
+  cache: ['sidePanelSections', 'Contact'],
+  params: { doctype: 'Contact' },
   auto: true,
+  transform: (data) => computed(() => getParsedSections(data)),
 })
 
-function updateField(name, value, callback) {
-  updateLead(name, value, () => {
-    lead.data[name] = value
-    callback?.()
+function getParsedSections(_sections) {
+  return _sections.map((section) => {
+    section.columns = section.columns.map((column) => {
+      column.fields = column.fields.map((field) => {
+        if (field.fieldname === 'email_id') {
+          return {
+            ...field,
+            read_only: false,
+            fieldtype: 'Dropdown',
+            options:
+              contact.data?.email_ids?.map((email) => {
+                return {
+                  name: email.name,
+                  value: email.email_id,
+                  selected: email.email_id === contact.data.email_id,
+                  placeholder: 'john@doe.com',
+                  onClick: () => {
+                    _contact.value.email_id = email.email_id
+                    setAsPrimary('email', email.email_id)
+                  },
+                  onSave: (option, isNew) => {
+                    if (isNew) {
+                      createNew('email', option.value)
+                      if (contact.data.email_ids.length === 1) {
+                        _contact.value.email_id = option.value
+                      }
+                    } else {
+                      editOption(
+                        'Contact Email',
+                        option.name,
+                        'email_id',
+                        option.value,
+                      )
+                    }
+                  },
+                  onDelete: async (option, isNew) => {
+                    contact.data.email_ids = contact.data.email_ids.filter(
+                      (email) => email.name !== option.name,
+                    )
+                    !isNew && (await deleteOption('Contact Email', option.name))
+                    if (_contact.value.email_id === option.value) {
+                      if (contact.data.email_ids.length === 0) {
+                        _contact.value.email_id = ''
+                      } else {
+                        _contact.value.email_id = contact.data.email_ids.find(
+                          (email) => email.is_primary,
+                        )?.email_id
+                      }
+                    }
+                  },
+                }
+              }) || [],
+            create: () => {
+              contact.data?.email_ids?.push({
+                name: 'new-1',
+                value: '',
+                selected: false,
+                isNew: true,
+              })
+            },
+          }
+        } else if (field.fieldname === 'mobile_no') {
+          return {
+            ...field,
+            read_only: false,
+            fieldtype: 'Dropdown',
+            options:
+              contact.data?.phone_nos?.map((phone) => {
+                return {
+                  name: phone.name,
+                  value: phone.phone,
+                  selected: phone.phone === contact.data.actual_mobile_no,
+                  onClick: () => {
+                    _contact.value.actual_mobile_no = phone.phone
+                    _contact.value.mobile_no = phone.phone
+                    setAsPrimary('mobile_no', phone.phone)
+                  },
+                  onSave: (option, isNew) => {
+                    if (isNew) {
+                      createNew('phone', option.value)
+                      if (contact.data.phone_nos.length === 1) {
+                        _contact.value.actual_mobile_no = option.value
+                      }
+                    } else {
+                      editOption(
+                        'Contact Phone',
+                        option.name,
+                        'phone',
+                        option.value,
+                      )
+                    }
+                  },
+                  onDelete: async (option, isNew) => {
+                    contact.data.phone_nos = contact.data.phone_nos.filter(
+                      (phone) => phone.name !== option.name,
+                    )
+                    !isNew && (await deleteOption('Contact Phone', option.name))
+                    if (_contact.value.actual_mobile_no === option.value) {
+                      if (contact.data.phone_nos.length === 0) {
+                        _contact.value.actual_mobile_no = ''
+                      } else {
+                        _contact.value.actual_mobile_no =
+                          contact.data.phone_nos.find(
+                            (phone) => phone.is_primary_mobile_no,
+                          )?.phone
+                      }
+                    }
+                  },
+                }
+              }) || [],
+            create: () => {
+              contact.data?.phone_nos?.push({
+                name: 'new-1',
+                value: '',
+                selected: false,
+                isNew: true,
+              })
+            },
+          }
+        } else if (field.fieldname === 'address') {
+          return {
+            ...field,
+            create: (value, close) => {
+              _contact.value.address = value
+              _address.value = {}
+              showAddressModal.value = true
+              close()
+            },
+            edit: async (addr) => {
+              _address.value = await call('frappe.client.get', {
+                doctype: 'Address',
+                name: addr,
+              })
+              showAddressModal.value = true
+            },
+          }
+        } else {
+          return field
+        }
+      })
+      return column
+    })
+    return section
   })
 }
 
-async function deleteLead(name) {
+async function setAsPrimary(field, value) {
+  let d = await call('crm.api.contact.set_as_primary', {
+    contact: contact.data.name,
+    field,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    createToast({
+      title: 'Contact updated',
+      icon: 'check',
+      iconClasses: 'text-ink-green-3',
+    })
+  }
+}
+
+async function createNew(field, value) {
+  if (!value) return
+  let d = await call('crm.api.contact.create_new', {
+    contact: contact.data.name,
+    field,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    createToast({
+      title: 'Contact updated',
+      icon: 'check',
+      iconClasses: 'text-ink-green-3',
+    })
+  }
+}
+
+async function editOption(doctype, name, fieldname, value) {
+  let d = await call('frappe.client.set_value', {
+    doctype,
+    name,
+    fieldname,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    createToast({
+      title: 'Contact updated',
+      icon: 'check',
+      iconClasses: 'text-ink-green-3',
+    })
+  }
+}
+
+async function deleteOption(doctype, name) {
   await call('frappe.client.delete', {
-    doctype: 'CRM Lead',
+    doctype,
     name,
   })
-  router.push({ name: 'Leads' })
-}
-
-// Convert to Deal
-const showConvertToDealModal = ref(false)
-const existingContactChecked = ref(false)
-const existingOrganizationChecked = ref(false)
-
-const existingContact = ref('')
-const existingOrganization = ref('')
-
-async function convertToDeal() {
-  if (existingContactChecked.value && !existingContact.value) {
-    createToast({
-      title: __('Error'),
-      text: __('Please select an existing contact'),
-      icon: 'x',
-      iconClasses: 'text-ink-red-4',
-    })
-    return
-  }
-
-  if (existingOrganizationChecked.value && !existingOrganization.value) {
-    createToast({
-      title: __('Error'),
-      text: __('Please select an existing organization'),
-      icon: 'x',
-      iconClasses: 'text-ink-red-4',
-    })
-    return
-  }
-
-  if (!existingContactChecked.value && existingContact.value) {
-    existingContact.value = ''
-  }
-
-  if (!existingOrganizationChecked.value && existingOrganization.value) {
-    existingOrganization.value = ''
-  }
-
-  let _deal = await call('crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal', {
-    lead: lead.data.name,
-    deal,
-    existing_contact: existingContact.value,
-    existing_organization: existingOrganization.value,
-  }).catch((err) => {
-    createToast({
-      title: __('Error converting to deal'),
-      text: __(err.messages?.[0]),
-      icon: 'x',
-      iconClasses: 'text-ink-red-4',
-    })
+  await contact.reload()
+  createToast({
+    title: 'Contact updated',
+    icon: 'check',
+    iconClasses: 'text-ink-green-3',
   })
-  if (_deal) {
-    showConvertToDealModal.value = false
-    existingContactChecked.value = false
-    existingOrganizationChecked.value = false
-    existingContact.value = ''
-    existingOrganization.value = ''
-    updateOnboardingStep('convert_lead_to_deal', true, false, () => {
-      localStorage.setItem('firstDeal', _deal)
-    })
-    capture('convert_lead_to_deal')
-    router.push({ name: 'Deal', params: { dealId: _deal } })
+}
+
+async function updateField(fieldname, value) {
+  await call('frappe.client.set_value', {
+    doctype: 'Contact',
+    name: props.contactId,
+    fieldname,
+    value,
+  })
+  createToast({
+    title: 'Contact updated',
+    icon: 'check',
+    iconClasses: 'text-ink-green-3',
+  })
+
+  contact.reload()
+}
+
+const { getFormattedCurrency } = getMeta('CRM Deal')
+
+const columns = computed(() => dealColumns)
+
+function getDealRowObject(deal) {
+  return {
+    name: deal.name,
+    organization: {
+      label: deal.organization,
+      logo: getOrganization(deal.organization)?.organization_logo,
+    },
+    annual_revenue: getFormattedCurrency('annual_revenue', deal),
+    status: {
+      label: deal.status,
+      color: getDealStatus(deal.status)?.color,
+    },
+    email: deal.email,
+    mobile_no: deal.mobile_no,
+    deal_owner: {
+      label: deal.deal_owner && getUser(deal.deal_owner).full_name,
+      ...(deal.deal_owner && getUser(deal.deal_owner)),
+    },
+    modified: {
+      label: formatDate(deal.modified),
+      timeAgo: __(timeAgo(deal.modified)),
+    },
   }
 }
 
-const activities = ref(null)
-
-function openEmailBox() {
-  activities.value.emailBox.show = true
-}
-
-const deal = reactive({})
-
-const dealStatuses = computed(() => {
-  let statuses = statusOptions('deal')
-  if (!deal.status) {
-    deal.status = statuses[0].value
-  }
-  return statuses
-})
-
-const dealTabs = createResource({
-  url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_fields_layout',
-  cache: ['RequiredFields', 'CRM Deal'],
-  params: { doctype: 'CRM Deal', type: 'Required Fields' },
-  auto: true,
-  transform: (_tabs) => {
-    let hasFields = false
-    let parsedTabs = _tabs.forEach((tab) => {
-      tab.sections.forEach((section) => {
-        section.columns.forEach((column) => {
-          column.fields.forEach((field) => {
-            hasFields = true
-            if (field.fieldname == 'status') {
-              field.fieldtype = 'Select'
-              field.options = dealStatuses.value
-              field.prefix = getDealStatus(deal.status).color
-            }
-
-            if (field.fieldtype === 'Table') {
-              deal[field.fieldname] = []
-            }
-          })
-        })
-      })
-    })
-    return hasFields ? parsedTabs : []
+const dealColumns = [
+  {
+    label: __('Organization'),
+    key: 'organization',
+    width: '11rem',
   },
-})
-
-const showQuickEntryModal = ref(false)
-
-function openQuickEntryModal() {
-  showQuickEntryModal.value = true
-  showConvertToDealModal.value = false
-}
+  {
+    label: __('Amount'),
+    key: 'annual_revenue',
+    align: 'right',
+    width: '9rem',
+  },
+  {
+    label: __('Status'),
+    key: 'status',
+    width: '10rem',
+  },
+  {
+    label: __('Email'),
+    key: 'email',
+    width: '12rem',
+  },
+  {
+    label: __('Mobile no'),
+    key: 'mobile_no',
+    width: '11rem',
+  },
+  {
+    label: __('Deal owner'),
+    key: 'deal_owner',
+    width: '10rem',
+  },
+  {
+    label: __('Last modified'),
+    key: 'modified',
+    width: '8rem',
+  },
+]
 </script>
